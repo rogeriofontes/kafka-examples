@@ -1,0 +1,54 @@
+package br.com.everis.kafkateste;
+
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.UUID;
+
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+
+public class FraudDetectorService {
+	private static KafkaConsumer<String, String> consumer = null;
+
+	public static void main(String[] args) {
+		consumer = new KafkaConsumer<String, String>(properties());
+		consumer.subscribe(Collections.singletonList("ECOMMERCE_NEW_ORDER"));
+
+		while (true) {
+			ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+
+			if (!records.isEmpty()) {
+				System.out.println("Encontrei" + records + "registros");
+				for (ConsumerRecord<String, String> consumerRecord : records) {
+					System.out.println("----------------------------");
+					System.out.println("Order Processada");
+					System.out.println(consumerRecord.key());
+					System.out.println(consumerRecord.value());
+					System.out.println(consumerRecord.partition());
+					System.out.println(consumerRecord.offset());
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+	}
+
+	private static Properties properties() {
+		Properties properties = new Properties();
+		properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+		properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+		properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+		properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, FraudDetectorService.class.getSimpleName());
+		properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, FraudDetectorService.class.getSimpleName() + "" + UUID.randomUUID().toString());
+		properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "1");
+		return properties;
+	}
+}
